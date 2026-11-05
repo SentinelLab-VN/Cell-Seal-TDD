@@ -1,10 +1,15 @@
 # Cell Seal: Backend
 
-> Repo `cell-seal`. Rust workspace: axum 0.8, sqlx 0.8, tokio, Postgres 16. The backend is
-> **amount-blind**: it coordinates orders, stores ciphertext and archives events, but holds no
-> key that could read an amount. This is the backend of the **sandbox**: a platform runs its own
-> backend; the part of this one it runs is the `indexer` ([`integration.md`](integration.md)
-> §1).
+> Repo `cell-seal`. Rust workspace: axum 0.8, sqlx 0.8, tokio, Postgres 16. This is the backend of
+> the **sandbox**, the reference tokenization platform: it is not the product and nothing in it is
+> sold. It is **amount-blind**: it coordinates orders, stores ciphertext and archives events, but
+> holds no key that could read an amount.
+>
+> For an integrator this document is a worked example. A platform runs its own backend and
+> provides the SDK's host services there ([`sdk.md`](sdk.md) section 2.1): section 4.5 and
+> section 6 specify the **event archive**, which the `indexer` crate implements and a platform may
+> run as is. Sections 4.2 to 4.4 and 5 show one **order store**, which a platform maps onto its own
+> order system. Section 1 lists the rules any such backend must keep.
 
 ## 1. What the backend may and may not do
 
@@ -42,7 +47,7 @@ flowchart LR
 | `gateway` | `seal-gateway` | REST, authentication, authorization, rate limiting, idempotency |
 | `auth` | library | Wallet-signed challenge, sessions, roles |
 | `orders` | library inside `seal-gateway` | State machine, dealing calendar, attestations, disclosure requests, DKG relay |
-| `indexer` | `seal-indexer` | Archive of events and invocation parameters; recovery API for wallets |
+| `indexer` | `seal-indexer` | Archive of events and invocation parameters. Recovery API for wallets |
 | `jobs` | `seal-jobs` | On-chain storage TTL extension, reminders, supply reconciliation |
 | `core` | library | Types, configuration, RPC client, errors |
 
@@ -51,8 +56,8 @@ redeployed.
 
 ## 3. Authentication and roles
 
-Login: `POST /auth/challenge {account}` returns a nonce; the client signs it with the wallet
-(SEP-0053); `POST /auth/session {account, signature}` returns a JWT. No passwords, no email as an
+Login: `POST /auth/challenge {account}` returns a nonce. The client signs it with the wallet
+(SEP-0053). `POST /auth/session {account, signature}` returns a JWT. No passwords, no email as an
 identifier.
 
 | Role | Scope | Source |
@@ -64,14 +69,14 @@ identifier.
 | `key_holder` | DKG, approve the fund's disclosure requests | The fund's key holder list |
 | `reader` | Open one specific disclosure request | Recorded in the request |
 
-Fund roles have their source of truth on chain; the backend only caches them. A fund ops member
+Fund roles have their source of truth on chain. The backend only caches them. A fund ops member
 whose role is revoked on chain loses API access as soon as the indexer sees the event.
 
 ## 4. API
 
 Every write request carries an `Idempotency-Key`. Every error response has the shape
-`{ "error": { "code": "...", "message": "..." } }`. Fields ending in `_ct` are base64-encoded
-sealed boxes; the backend does not interpret their contents.
+`{ "error": { "code": "ORDER_NOT_FOUND", "message": "order not found" } }`. Fields ending in `_ct` are base64-encoded
+sealed boxes. The backend does not interpret their contents.
 
 ### 4.1 Public, no login
 
@@ -88,7 +93,7 @@ sealed boxes; the backend does not interpret their contents.
 | POST | `/me/box-key` | Register the box public key, with a wallet signature |
 | POST | `/me/accounts` | Record a sealed account: wrapper, root form, enrolled signer |
 | POST | `/funds/{id}/access-requests` | Ask the fund for approval |
-| POST | `/orders` | `{fund_id, order_id, kind, pay, amount_ct_fund, amount_ct_investor}` |
+| POST | `/orders` | `{fund_id, order_id, kind, pay, amount_ct_fund, amount_ct_investor}`. `kind` is `sub`, `red` or `pair`. A `pair` order also carries `counterparty` |
 | GET | `/orders`, `/orders/{id}` | Metadata plus `amount_ct_investor` plus `result_ct_investor` |
 | POST | `/orders/{id}/cancel` | Only before cut-off. For a DvP order the client must `revoke_spender` on chain |
 | POST | `/orders/{id}/opening` | `{opening_ct_fund}` for a secondary transfer |
@@ -97,23 +102,26 @@ sealed boxes; the backend does not interpret their contents.
 
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/funds` | Record a fund just created on chain; the backend checks it against `fund-registry` |
+| POST | `/funds` | Record a fund just created on chain. The backend checks it against `fund-registry` |
 | GET | `/funds/{id}/orders` | Filter by status, kind, period |
 | POST | `/orders/{id}/attest` | `{event: cash_received \| cash_paid, signature}` |
 | POST | `/orders/{id}/hold`, `/release`, `/reject` | |
 | POST | `/orders/{id}/result` | `{result_ct_fund, result_ct_investor}`: shares or payout after strike |
-| POST | `/funds/{id}/nav` | Record a NAV just published on chain; the backend checks it against `fund-registry.nav` |
+| POST | `/funds/{id}/nav` | Record a NAV just published on chain. The backend checks it against `fund-registry.nav` |
 | GET | `/funds/{id}/windows/current` | Window metadata: its orders, `next_close` |
-| POST | `/funds/{id}/windows/{n}/plan` | `{plan_ct_fund}`: the window close plan, stored so other fund ops can review it |
+| POST | `/funds/{id}/windows/{n}/plan` | `{plan_ct_fund}`: the window close plan, stored so other fund ops can review it. Sets the window to `closing`. `WindowClosed` sets it to `closed` |
 | GET | `/funds/{id}/investors`, PATCH `/investors/{account}` | Approval status, KYC expiry |
-| GET | `/funds/{id}/envelopes/mine`, POST `/envelopes` | Envelope of `ops_root` or of `vk` |
+| GET | `/funds/{id}/envelopes/mine`, POST `/envelopes` | Envelope of `ops_root`, of `vk`, or of a key share. Also open to `key_holder` |
 
 ### 4.4 Key holders and disclosure
 
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/funds/{id}/dkg`, `/dkg/{c}/messages` | Relay encrypted DKG messages; store public commitments |
-| POST | `/funds/{id}/disclosure-requests` | `{reader, scope, from_ledger, to_ledger, expires_at}` |
+| POST | `/funds/{id}/dkg` | `fund_ops:signer` starts a ceremony: `{holders, threshold}`. Returns the ceremony id |
+| GET | `/funds/{id}/dkg` | Ceremony status: which holders have submitted a share commitment |
+| POST, GET | `/dkg/{c}/messages` | Relay encrypted DKG messages (`?since=` on GET). Store public commitments |
+| POST | `/funds/{id}/disclosure-requests` | `{reader, scope, from_ledger, to_ledger, expires_at}`. Created by a `fund_ops:signer` or a `key_holder` |
+| POST | `/disclosure-requests/{id}/cancel`, `/decline` | Cancel by the requester. Decline by a key holder |
 | POST | `/disclosure-requests/{id}/approvals` | `{holder, partials, dleq_proofs, signature}` |
 | GET | `/disclosure-requests/{id}/bundle` | For the `reader`: events in scope plus the key holders' partials |
 | GET | `/funds/{id}/unlock-log` | Immutable log |
@@ -127,7 +135,7 @@ Following the API contract in the upstream `docs/indexer.md`:
 | GET | `/events?contract=&account=&from=&limit=` | Events of one account, in global order |
 | GET | `/events/checkpoint?contract=&account=` | Latest checkpoint and its ledger |
 | GET | `/invocations/{tx_hash}` | Stored invocation parameters, to retrieve `C_t` |
-| GET | `/status` | Ledger ingested so far; the RPC retention floor |
+| GET | `/status` | Ledger ingested so far. The RPC retention floor |
 
 ## 5. Order state machine
 
@@ -176,7 +184,7 @@ Transition rules:
 
 The backend computes it from `FundTerms`: for each dealing day there is a `cutoff_at`, a
 `strike_at`, and the window that contains it. At `strike_at` the backend marks the dealing day as
-*awaiting NAV* and creates a to-do for fund ops; it publishes nothing itself. An order leaves
+*awaiting NAV* and creates a to-do for fund ops. It publishes nothing itself. An order leaves
 `awaiting_price` only when the NAV of that exact dealing day is on chain **and** fund ops have
 sent the `result_ct` for that order.
 
@@ -186,12 +194,12 @@ sent the `result_ct` for that order.
 
 | Topic | Rule |
 |---|---|
-| Source | Stellar RPC `getEvents` plus `getTransaction`. A Stellar ledger is final when it closes; there are no reorgs |
+| Source | Stellar RPC `getEvents` plus `getTransaction`. A Stellar ledger is final when it closes. There are no reorgs |
 | Scope | Every event of every `seal-token`, `settlement`, `fund-registry`, `fund-policy`, `seal-auditor`, `seal-verifier` |
 | Record | `contract_id`, `ledger_seq`, `ledger_close_time`, `tx_hash`, `tx_application_order`, `event_index`, `topics`, `data`, as raw XDR |
 | Invocation parameters | For every transaction that calls `settlement`, also store the XDR of the parameters. `C_t` sits in the leg's `data`, not in the event, and opening verification needs it |
 | Ordering | Keep and serve the exact global order `(ledger_seq, tx_application_order, event_index)` |
-| Cursor | Table `chain_cursor`. On restart, continue from the cursor; event writes are idempotent by event id |
+| Cursor | Table `chain_cursor`. On restart, continue from the cursor. Event writes are idempotent by event id |
 | Falling behind | If the cursor drops below the RPC retention floor, events are lost permanently. `seal-jobs` alerts when the gap exceeds 25% of the retention window, and there is a backfill path from Horizon or from an archive node |
 | Retention | Permanent. Deleting events destroys investors' ability to recover their wallets |
 
@@ -202,10 +210,10 @@ sent the `result_ct` for that order.
 | Event | Effect |
 |---|---|
 | `LegSettled`, `DvpSettled`, `PairSettled` | Change leg state by `order_id` |
-| `WindowClosed` | Close the window in the database, record `net_public` and `supply_after`; open the next window |
+| `WindowClosed` | Close the window in the database, record `net_public` and `supply_after`. Open the next window |
 | `SetSpender`, `RevokeSpender` | Attach or detach the allowance of that account's pending DvP order |
 | `Register` | Mark the investor as having a sealed account in the wrapper |
-| `Frozen`, `Unfrozen`, `Clawback` | Update investor status; create a to-do for compliance |
+| `Frozen`, `Unfrozen`, `Clawback` | Update investor status. Create a to-do for compliance |
 | `fund-registry`: NAV, roles, terms | Refresh the cache |
 
 ### 6.3 Reconciliation
@@ -213,9 +221,9 @@ sent the `result_ct` for that order.
 `seal-jobs` runs after every `WindowClosed`: `balance(fund token, share wrapper)` must equal
 `supply_after` in the event, and compared with the previous close it may only have changed by
 `net` plus the holders' self-wrap `Deposit`s (Case 2). With `net > 0`, the fund token's events must
-show the issuer funding exactly `net` into the settlement account right before; with `net < 0`,
+show the issuer funding exactly `net` into the settlement account right before. With `net < 0`,
 retiring exactly `|net|` right after. Any mismatch raises the highest-severity alert
-([`integration.md`](integration.md) §6, T1a to T1c). The old rule
+([`integration.md`](integration.md) section 6, T1a to T1c). The old rule
 `total_supply = balance(wrapper)` no longer holds once there are public holders. Reconciling the
 *sum of sealed claims* against the wrapper balance can only be done on the fund's client, because
 it needs amounts.
@@ -336,7 +344,7 @@ CREATE TABLE attestations (
 CREATE TABLE key_envelopes (
   fund_id          integer NOT NULL REFERENCES funds,
   recipient        text NOT NULL REFERENCES users,
-  kind             text NOT NULL CHECK (kind IN ('ops_root','viewer','key_share')),
+  kind             text NOT NULL CHECK (kind IN ('ops_root','vk','key_share')),
   epoch            integer NOT NULL DEFAULT 0,
   envelope         bytea NOT NULL,
   created_by       text NOT NULL,
@@ -429,7 +437,7 @@ Schema notes:
 | `orders.pay` is free text (`bank`, `cash:<wrapper>`) | Adding a new stablecoin needs no migration |
 | `fund_investors.profile_ct_fund` | The investor's legal name and bank details are data the fund needs and the backend does not, so they are a sealed box too |
 | `chain_events.accounts` | Every address that appears in the topics, so account queries do not have to decode XDR at read time |
-| `audit_log.prev_hash`, `hash` | Hash chain; editing an old row breaks the chain from that row onward. The unlock log is a filtered view over this table |
+| `audit_log.prev_hash`, `hash` | Hash chain. Editing an old row breaks the chain from that row onward. The unlock log is a filtered view over this table |
 | No `balances` or `register` table | The register needs amounts, so it exists only on the fund's client |
 
 ## 8. Operations
@@ -439,7 +447,7 @@ Schema notes:
 | Configuration | Environment variables: `DATABASE_URL`, `STELLAR_RPC_URL`, `NETWORK_PASSPHRASE`, `REGISTRY_CONTRACT`, `SETTLEMENT_CONTRACT`, `JWT_SECRET`, `CORS_ORIGINS` |
 | Logging | Structured JSON. `_ct` fields are never logged, not even at debug level. Middleware strips request bodies before writing |
 | Metrics | Indexer lag (ledgers), orders by status, age of the oldest order in `awaiting_cash`, attestations per day, error rate by code |
-| Alerts | Indexer lag over threshold; supply reconciliation mismatch; window past `closes_at` and not closed; on-chain verification key changed |
+| Alerts | Indexer lag over threshold. Supply reconciliation mismatch. Window past `closes_at` and not closed. On-chain verification key changed |
 | Backup | Postgres PITR. Data that cannot be rebuilt from chain: ciphertext, attestations, envelopes, `audit_log`. `chain_events` can be rebuilt as long as the RPC or an archive node still holds the events |
-| Self-hosting | Same image, same compose file. A self-hosting fund keeps its own metadata; features are identical |
+| Running a copy | Same image, same compose file. A platform that runs its own copy of the sandbox keeps its own metadata. Features are identical |
 | TTL job | Daily, extend the TTL of the `ConfidentialAccount` and `SpenderDelegation` entries of every account active in the last 90 days. The platform pays the fee and prices it into its service fee |

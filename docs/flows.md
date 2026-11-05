@@ -2,7 +2,7 @@
 
 > Read [`overview.md`](overview.md) first. This document describes each business flow at the level
 > of "who does what, what goes on chain, what the market sees". Contract signatures:
-> [`contracts.md`](contracts.md). Data flow through the backend: [`architecture.md`](architecture.md) §8.
+> [`contracts.md`](contracts.md). Data flow through the SDK and its host services: [`architecture.md`](architecture.md) section 8.
 
 ## 1. Order model
 
@@ -22,14 +22,14 @@ done when both legs are `confirmed`.
 | **DoP** | Separate. The second leg is triggered only when the first is `confirmed` | Fiat or sealed stablecoin |
 | **DvP** | One transaction, all-or-nothing. Each side checks the other side's amount before signing | Sealed stablecoin |
 
-Two moments are kept apart: **strike** is when the NAV is published and orders are priced;
+Two moments are kept apart: **strike** is when the NAV is published and orders are priced.
 **settlement** is when the settlement window closes, when the net is wrapped or unwrapped and the
 shares of new subscriptions are actually delivered. Before settlement, the net shares of the period
 are not yet inside the wrapper. Minting and burning the fund token is the issuer's job on the
-platform's rail, not the job of `settlement` ([`integration.md`](integration.md) §4).
+platform's rail, not the job of `settlement` ([`integration.md`](integration.md) section 4).
 
-Every sealed transfer goes through the `settlement` contract with an `order_id`; its events are what
-the backend uses to change leg status.
+Every sealed transfer goes through the `settlement` contract with an `order_id`. Its events are what
+the order store (the platform's, or the sandbox backend's) uses to change leg status.
 
 Mode is a property of the order, not of the fund: the same fund can take subscriptions in fiat
 (DoP) and let holders transfer on the secondary market in stablecoin (DvP).
@@ -53,7 +53,7 @@ sequenceDiagram
 Case 1, a new fund: the platform issues the token and deploys the wrapper in the same pass, so no
 holder has to wrap and no balance was ever public. Case 2, an existing token: holders who have not
 wrapped stay on the platform's public rail, and the fund runs two rails side by side,
-[`integration.md`](integration.md) §5. The sandbox apps implement Case 1, screens
+[`integration.md`](integration.md) section 5. The sandbox apps implement Case 1, screens
 [`design/`](design/README.md) 01 to 03. Step-by-step procedures for both cases:
 [`onboarding.md`](onboarding.md).
 
@@ -118,7 +118,7 @@ sequenceDiagram
 ```
 
 The key point: the holder **does not unwrap**, and the redemption order **carries no plaintext
-amount**. The market sees that the holder sent something to the issuer; it does not see how much.
+amount**. The market sees that the holder sent something to the issuer. It does not see how much.
 The only number that comes out is the net of the whole period.
 
 ### 4.2 DvP
@@ -134,15 +134,15 @@ swaps sealed shares for sealed cash. This is the only flow where DvP is **mandat
 have no reason to trust each other.
 
 The issuer is not part of the transaction. The side receiving shares sends the *opening* of its leg
-to the fund so the register updates immediately; the k-of-n viewing key is used for periodic
+to the fund so the register updates immediately. The k-of-n viewing key is used for periodic
 reconciliation. Policy still blocks transfers to addresses that are not whitelisted.
 
 ## 6. Settlement window
 
 | During the period | At the end |
 |---|---|
-| Every subscription and redemption is a sealed transfer inside the wrapper | The issuer computes the net: redemptions minus subscriptions |
-| The wrapper balance does not change | Net positive: the issuer funds the public amount into the settlement account, `close_window` wraps it. Net negative: `close_window` unwraps, the issuer burns or retires. `settlement` neither mints nor burns |
+| Every subscription and redemption is a sealed transfer inside the wrapper | The issuer computes the net: subscriptions minus redemptions |
+| The wrapper balance does not change | Net positive: the issuer funds the public amount into the settlement account, `close_window` wraps it. Net negative: `close_window` unwraps, the issuer burns or retires. Net zero: no token moves, the window still closes and emits `WindowClosed`. `settlement` neither mints nor burns |
 | The market sees no number | The market sees **one** number: the net of the period |
 
 The window runs on schedule even when there are no orders, so that "this period had an unwrap" is
@@ -155,7 +155,7 @@ sequenceDiagram
     participant A as Auditor / regulator
     participant I as Issuer
     participant T as Transfer agent
-    participant C as Cell Seal (indexer)
+    participant C as Event archive (the platform's indexer)
     A->>I: Request to open the books for period X
     I->>T: Contribute key share (k-of-n)
     T-->>I: Key share
@@ -168,6 +168,9 @@ Every unlock leaves a trace: who requested, who contributed a share, which scope
 
 ## 8. Where amounts can leak
 
+The business view. The master list with ids L1 to L18 and the technical mitigation of each is
+[`security.md`](security.md) section 3.
+
 | Where | Why it leaks | Handling |
 |---|---|---|
 | The platform's order event has an amount field | Size is exposed at request time | Orders carry only the order reference |
@@ -178,4 +181,4 @@ Every unlock leaves a trace: who requested, who contributed a share, which scope
 | Too few orders in one period | Net is roughly one order | Longer window, configured per fund |
 | The issuer wraps straight to the investor's address | Wrap has a public amount with the recipient address | Always wrap into the issuer's settlement account, then transfer sealed |
 | An investor registers with an `auditor_id` outside the fund | The fund cannot read that investor's amounts | Enforce the fund's `auditor_id` at registration |
-| Case 2: the platform mints public shares straight to an investor who then wraps | Public amount, tied to an address | New shares for a sealed investor always go from the settlement account inside the wrapper; self-wrap is only for a balance already held, [`integration.md`](integration.md) §5 |
+| Case 2: the platform mints public shares straight to an investor who then wraps | Public amount, tied to an address | New shares for a sealed investor always go from the settlement account inside the wrapper. Self-wrap is only for a balance already held, [`integration.md`](integration.md) section 5 |
