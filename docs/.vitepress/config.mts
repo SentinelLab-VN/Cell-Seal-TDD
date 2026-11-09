@@ -32,6 +32,20 @@ export default withMermaid(
       ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ],
     ignoreDeadLinks: [/\.pen$/],
+    vite: {
+      // Dev server only. Mermaid itself must stay un-bundled (pre-bundling it makes
+      // the first diagram hang), but its CommonJS dependencies must be pre-bundled
+      // or the browser fails on their missing default export and shows a blank page.
+      // Those packages are listed as devDependencies so Vite can resolve them.
+      optimizeDeps: {
+        exclude: ['mermaid'],
+        include: ['fastdom', 'fastdom/extensions/fastdom-promised.js', 'cytoscape-fcose'],
+      },
+      resolve: {
+        // The plugin aliases the other dayjs plugins mermaid uses to their ESM builds.
+        alias: { 'dayjs/plugin/duration.js': 'dayjs/esm/plugin/duration' },
+      },
+    },
     markdown: {
       lineNumbers: false,
       config(md) {
