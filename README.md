@@ -18,7 +18,7 @@ on a diagram that does not parse.
 
 | # | Document | Scope | For | Answers |
 |---|---|---|---|---|
-| 0 | [`docs/technical-architecture.md`](docs/technical-architecture.md) | Both | Everyone | The architecture document: components, Stellar and Soroban integration, data flow, security, infrastructure, technology stack, open-source plan, implementation status |
+| 0 | [`docs/technical-architecture.md`](docs/technical-architecture.md) | Both | Everyone | Start here. Components, Stellar integration, order flow, security and monitoring, infrastructure, stack, licensing, what exists today, testnet addresses |
 | 1 | [`docs/overview.md`](docs/overview.md) | Both | Everyone | What the product does, for whom, what it does not do |
 | 2 | [`docs/glossary.md`](docs/glossary.md) | Both | Everyone | What each term means, and where it appears in the contracts and the SDK |
 | 3 | [`docs/flows.md`](docs/flows.md) | Product | Everyone | Each business flow: who does what, what goes on chain, what the market sees |

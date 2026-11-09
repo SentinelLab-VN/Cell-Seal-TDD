@@ -34,6 +34,7 @@ export default defineConfig({
   lang: 'en',
   cleanUrls: true,
   rewrites: rewrite,
+  sitemap: { hostname: 'https://docs.cellprivate.com' },
   // The Pen source file is copied next to the design page in `buildEnd` below.
   ignoreDeadLinks: [/\.pen$/],
   head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }]],
@@ -52,7 +53,7 @@ export default defineConfig({
     // outline reads as a table of contents without the subsection noise.
     outline: { level: 2, label: 'Contents' },
     search: { provider: 'local' },
-    socialLinks: [{ icon: 'github', link: 'https://github.com/SentinelLab-VN/Cell-Seal-TDD' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/cellprivacy/cell' }],
     footer: { message: 'Cell Seal technical design, version 1.', copyright: 'Cell Private' },
   },
 
