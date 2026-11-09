@@ -207,7 +207,7 @@ is the reason principle 1 is enforced by cryptography rather than by access cont
 Full component design: [`architecture.md`](architecture.md). Product boundary and what the
 platform owns: [`integration.md`](integration.md).
 
-## 3. Stellar and Soroban integration
+## 3. Stellar integration
 
 ### 3.1 Why Stellar
 
@@ -701,7 +701,7 @@ Incident procedures for a suspected soundness defect, an `ops_root` compromise, 
 compromise, a tampered web build, lost events and an unplanned verification-key change are in
 [`security.md`](security.md) section 8.
 
-## 6. Infrastructure and deployment
+## 6. Infrastructure
 
 ### 6.1 Hosting
 
@@ -860,7 +860,7 @@ fund operations; no bank or ramp integration exists yet.
 | [`frontend.md`](frontend.md) | Sandbox applications: routes, data handling, browser security |
 | [`design/`](design/README.md) | The eighteen screens of the fund console and the investor application |
 
-## Appendix A. Testnet deployment
+## Appendix A. Testnet addresses
 
 Second deployment of the prototype, fund id 1, auditor id 1, Stellar testnet.
 

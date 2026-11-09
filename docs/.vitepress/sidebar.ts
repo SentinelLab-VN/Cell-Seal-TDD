@@ -1,17 +1,24 @@
 import type { DefaultTheme } from 'vitepress'
 
-/** Same grouping as the reading order in the repository README. */
+/**
+ * Four groups, in reading order. The first holds the documents everyone reads;
+ * the others follow the Scope column of the repository README: what a platform
+ * receives (Product), how it is built (Design), and the reference platform
+ * that ships with it (Sandbox).
+ */
 export const sidebar: DefaultTheme.Sidebar = {
   '/seal/': [
     {
       text: 'Cell Seal',
-      items: [{ text: 'Technical Architecture', link: '/seal/architecture' }],
+      items: [
+        { text: 'Technical Architecture', link: '/seal/architecture' },
+        { text: 'Overview', link: '/seal/overview' },
+        { text: 'Glossary', link: '/seal/glossary' },
+      ],
     },
     {
       text: 'Product',
       items: [
-        { text: 'Overview', link: '/seal/overview' },
-        { text: 'Glossary', link: '/seal/glossary' },
         { text: 'Flows', link: '/seal/flows' },
         { text: 'Integration', link: '/seal/integration' },
         { text: 'Onboarding a fund', link: '/seal/onboarding' },
@@ -19,13 +26,13 @@ export const sidebar: DefaultTheme.Sidebar = {
       ],
     },
     {
-      text: 'Technical design',
+      text: 'Design',
       items: [
-        { text: 'System architecture', link: '/seal/system-architecture' },
+        { text: 'Architecture in detail', link: '/seal/system-architecture' },
         { text: 'Contracts', link: '/seal/contracts' },
         { text: 'Cryptography', link: '/seal/cryptography' },
         { text: 'Keys', link: '/seal/keys' },
-        { text: 'Client SDK', link: '/seal/sdk' },
+        { text: 'SDK', link: '/seal/sdk' },
         { text: 'Security', link: '/seal/security' },
       ],
     },
@@ -34,7 +41,7 @@ export const sidebar: DefaultTheme.Sidebar = {
       items: [
         { text: 'Backend', link: '/seal/backend' },
         { text: 'Frontend', link: '/seal/frontend' },
-        { text: 'Design', link: '/seal/design/' },
+        { text: 'Screens', link: '/seal/design/' },
       ],
     },
   ],

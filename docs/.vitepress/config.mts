@@ -46,12 +46,11 @@ export default defineConfig({
   },
 
   themeConfig: {
-    nav: [
-      { text: 'Seal', link: '/seal/architecture', activeMatch: '^/seal/' },
-      { text: 'SCF Handbook', link: 'https://stellar.gitbook.io/scf-handbook' },
-    ],
+    nav: [{ text: 'Seal', link: '/seal/architecture', activeMatch: '^/seal/' }],
     sidebar,
-    outline: { level: [2, 3], label: 'On this page' },
+    // Section headings only. Every document numbers its sections, so the
+    // outline reads as a table of contents without the subsection noise.
+    outline: { level: 2, label: 'Contents' },
     search: { provider: 'local' },
     socialLinks: [{ icon: 'github', link: 'https://github.com/SentinelLab-VN/Cell-Seal-TDD' }],
     footer: { message: 'Cell Seal technical design, version 1.', copyright: 'Cell Private' },
