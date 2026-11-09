@@ -7,8 +7,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
-    { "source": "/", "destination": "/seal/architecture", "permanent": false },
-    { "source": "/seal", "destination": "/seal/architecture", "permanent": false },
+    { "source": "/", "destination": "/seal", "permanent": false },
     { "source": "/seal/technical-architecture", "destination": "/seal/architecture", "permanent": true }
   ],
   "headers": [

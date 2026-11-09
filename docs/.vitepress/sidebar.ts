@@ -1,7 +1,10 @@
 import type { DefaultTheme } from 'vitepress'
 
 /**
- * Four groups, in reading order. The first holds the documents everyone reads;
+ * One key per product prefix. A second product adds its own key, for example
+ * '/channel/': [...], and VitePress shows the sidebar that matches the URL.
+ *
+ * Seal: four groups, in reading order. The first holds the documents everyone reads;
  * the others follow the Scope column of the repository README: what a platform
  * receives (Product), how it is built (Design), and the reference platform
  * that ships with it (Sandbox).
