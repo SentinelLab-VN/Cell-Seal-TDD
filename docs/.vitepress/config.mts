@@ -130,8 +130,8 @@ export default withMermaid(
     },
   }),
   {
+    // The plugin switches to Mermaid's dark theme whenever the site is in dark mode.
     mermaid: {
-      theme: 'base',
       themeVariables: {
         fontFamily: 'inherit',
       },
