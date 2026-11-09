@@ -16,11 +16,11 @@
 | Prototype repository | `SentinelLab-VN/cell-seal-mvp`: six Soroban contracts, circuits, deploy and prove scripts, testnet run |
 | Primitive | OpenZeppelin Confidential Token for Stellar, `stellar-contracts` branch `v0.9.0`, commit `5ffda91`, with Nethermind's `rs-soroban-ultrahonk` verifier |
 
-**How to read this document.** Sections 1 to 6 are the architecture outline the SCF submission
-criteria ask for. Section 4 carries the threat model and the monitoring plan the Tranche 2
-requirements refer to. Section 7 is the open-source plan for the smart contracts. Section 8 states
-what exists today, what is measured, and what stands between testnet and mainnet. Roadmap,
-tranche deliverables, budget and team are in the SCF Build form, not here.
+Sections 1 to 6 are the architecture outline the SCF submission criteria ask for. Section 4.4
+and 4.5 are the threat model and the monitoring plan of the Tranche 2 requirements. Section 7 is
+the open-source plan for the contracts. Section 8 is what exists, what was measured, and what
+stands between testnet and mainnet. Roadmap, tranche deliverables, budget and team are in the SCF
+Build form, not here.
 
 ## 1. System overview
 
@@ -520,9 +520,9 @@ section 8, [`frontend.md`](frontend.md) section 8.
 | Sandbox: backend, fund console, investor app | Published as the reference integration. A platform may run it from source | Open-source license to be confirmed by the team |
 | This design | The 15 documents in this repository, published at `docs.cellprivate.com/seal` | |
 
-Why this matters beyond Cell Seal: OpenZeppelin ships a spec for a Confidential Token SDK but no
-SDK, and no durable indexer. The `core` to `token` layers and the reference `indexer` close that
-gap for every project on the primitive.
+OpenZeppelin ships a spec for a Confidential Token SDK but no SDK, and no durable indexer. The
+`core` to `token` layers and the reference `indexer` fill that gap for every project built on the
+primitive.
 
 ## 8. Status, evidence and the path to mainnet
 

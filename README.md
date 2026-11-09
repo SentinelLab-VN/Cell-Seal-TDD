@@ -9,8 +9,10 @@ This repository is the technical design document (TDD). It holds no application 
 
 Published at **[docs.cellprivate.com/seal/architecture](https://docs.cellprivate.com/seal/architecture)**:
 the Technical Architecture Document written for the Stellar Community Fund Build Award, with every
-document below as a page under `/seal/`. The site is built from `docs/` with VitePress (`pnpm docs:dev`,
-`pnpm docs:build`) and deployed by Vercel from `vercel.json`.
+document below as a page under `/seal/`. The site is built from `docs/` with VitePress and deployed
+by Vercel from `vercel.json`. Mermaid blocks are rendered to SVG at build time, so the pages carry
+no diagram JavaScript. `pnpm docs:dev` serves it locally, `pnpm docs:build` fails on a dead link or
+on a diagram that does not parse.
 
 ## Reading order
 
