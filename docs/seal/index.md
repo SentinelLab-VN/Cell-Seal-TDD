@@ -3,6 +3,9 @@ layout: home
 title: Cell Seal
 hero:
   name: Cell Seal
+  image:
+    src: /logo.svg
+    alt: Cell
   text: Confidential settlement for tokenized fund shares on Stellar
   tagline: The amount of every transaction is sealed on the public ledger. The issuer, the transfer agent and the regulator can still read everything.
   actions:

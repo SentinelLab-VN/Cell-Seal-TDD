@@ -35,7 +35,10 @@ export default defineConfig({
   sitemap: { hostname: 'https://docs.cellprivate.com' },
   // The Pen source file is copied by `buildEnd`, so links to it are valid.
   ignoreDeadLinks: [/\.pen$/],
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }]],
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ['meta', { name: 'theme-color', content: '#0a0b0d' }],
+  ],
 
   markdown: {
     config(md) {
@@ -45,6 +48,7 @@ export default defineConfig({
   },
 
   themeConfig: {
+    logo: '/logo.svg',
     // One entry per product. Add { text: 'Channel', link: '/channel/', activeMatch: '^/channel/' } later.
     nav: [{ text: 'Seal', link: '/seal/', activeMatch: '^/seal/' }],
     sidebar,
