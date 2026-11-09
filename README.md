@@ -7,10 +7,16 @@ platform keeps its fund token, its mint and burn rights, KYC and the order lifec
 
 This repository is the technical design document (TDD). It holds no application code.
 
+Published at **[docs.cellprivate.com/seal/architecture](https://docs.cellprivate.com/seal/architecture)**:
+the Technical Architecture Document written for the Stellar Community Fund Build Award, with every
+document below as a page under `/seal/`. The site is built from `docs/` with VitePress (`pnpm docs:dev`,
+`pnpm docs:build`) and deployed by Vercel from `vercel.json`.
+
 ## Reading order
 
 | # | Document | Scope | For | Answers |
 |---|---|---|---|---|
+| 0 | [`docs/technical-architecture.md`](docs/technical-architecture.md) | Both | SCF reviewers | The architecture outline in the order the SCF Handbook asks for: overview, Stellar integration, data flow, security with threat model and monitoring plan, infrastructure, stack, open-source plan, status |
 | 1 | [`docs/overview.md`](docs/overview.md) | Both | Everyone | What the product does, for whom, what it does not do |
 | 2 | [`docs/glossary.md`](docs/glossary.md) | Both | Everyone | What each term means, and where it appears in the contracts and the SDK |
 | 3 | [`docs/flows.md`](docs/flows.md) | Product | Everyone | Each business flow: who does what, what goes on chain, what the market sees |
@@ -64,6 +70,7 @@ token and public holders (Case 2). See [`docs/onboarding.md`](docs/onboarding.md
 | Part | Status |
 |---|---|
 | Product model | Decided 2026-10-24: contracts plus SDK sold to tokenization platforms. `settlement` does not mint or burn. The testnet prototype predates this decision. The required changes are in [`docs/integration.md`](docs/integration.md) section 8 |
+| Technical Architecture Document for SCF | Written 2026-11-09, published at `docs.cellprivate.com/seal/architecture` |
 | Overview, glossary, flows, onboarding, design | Written |
 | Primitive survey | Read from the upstream `v0.9.0` code on 2026-09-20 and measured on testnet on 2026-10-09 ([`docs/primitives.md`](docs/primitives.md) section 8) |
 | Technical design | Version 1, the basis for implementation |
