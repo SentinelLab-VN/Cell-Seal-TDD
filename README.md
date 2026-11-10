@@ -77,7 +77,7 @@ token and public holders (Case 2). See [`docs/onboarding.md`](docs/seal/onboardi
 | Overview, glossary, flows, onboarding, design | Written |
 | Primitive survey | Read from the upstream `v0.9.0` code on 2026-09-20 and measured on testnet on 2026-10-09 ([`docs/primitives.md`](docs/seal/primitives.md) section 8) |
 | Technical design | Version 1, the basis for implementation |
-| Code | Contracts, circuits and scripts exist as a testnet prototype that has completed one full cycle. SDK: not started. Sandbox (backend and apps): not started |
+| Code | [Contracts and circuits](https://github.com/cellprivacy/cell-seal). |
 
 ## Conventions
 
