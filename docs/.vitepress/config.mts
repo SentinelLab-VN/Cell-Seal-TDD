@@ -56,7 +56,7 @@ export default defineConfig({
     // outline reads as a table of contents without the subsection noise.
     outline: { level: 2, label: 'Contents' },
     search: { provider: 'local' },
-    socialLinks: [{ icon: 'github', link: 'https://github.com/cellprivacy/cell' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/cellprivacy/cell-seal' }],
     footer: { message: 'Cell Private technical documentation.', copyright: 'Cell Private' },
   },
 

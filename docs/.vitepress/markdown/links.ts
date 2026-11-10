@@ -12,7 +12,7 @@ import type MarkdownIt from 'markdown-it'
  * VitePress resolves the result against the rewritten page paths, so the
  * replacements are written as source file names, not as URLs.
  */
-const GITHUB_DOCS = 'https://github.com/cellprivacy/cell/tree/main/docs/'
+const GITHUB_DOCS = 'https://github.com/cellprivacy/cell-seal/tree/main/docs/'
 
 function target(href: string, page: string): string {
   if (href === '../../README.md') return './index.md'
@@ -20,7 +20,7 @@ function target(href: string, page: string): string {
   if (page.startsWith('seal/') && /(^|\/)architecture\.md(#|$)/.test(href)) {
     return href.replace('architecture.md', 'system-architecture.md')
   }
-  if (/^screens\/(fund|investor)\/$/.test(href)) return GITHUB_DOCS + 'seal/design/' + href
+  if (/^screens\/(fund|investor)\/$/.test(href)) return GITHUB_DOCS + 'design/' + href
   return href
 }
 
