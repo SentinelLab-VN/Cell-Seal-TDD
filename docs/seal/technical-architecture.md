@@ -8,64 +8,30 @@
 | Design | https://docs.cellprivate.com/seal, fifteen documents, listed in section 10 |
 | Contact | https://cellprivate.com |
 
-## 1. Introduction
+## 1. Scope
 
 ### 1.1 Purpose
 
 This document explains how Cell Seal is built: the components, the Soroban contracts and how
 they call each other, how an order moves through the system, the security model, where the
-pieces run, and what exists today. It is the summary of the technical design. Read
-[`overview.md`](overview.md) first, keep [`glossary.md`](glossary.md) at hand, then read this
-document. The design in detail is the fifteen documents listed in section 10, linked at the end of
-every section. Where this document and a detailed document differ, the detailed document is
-the specification.
-
-The roadmap, budget and team are in the SCF application and are not repeated here.
-
-### 1.2 The problem
-
-A unit holder in a traditional fund has a private position. Only the fund and its transfer
-agent know how many units they hold and how much they put in or take out.
-
-Tokenization removes that privacy. On Stellar today anyone can look up the address of every
-holder, the balance at that address, and the size of every subscription and redemption. Token
-holders have the same legal rights as traditional unit holders but not the same
-confidentiality. We call this the privacy parity gap.
-
-For retail holders, every balance is public with its history. For institutional holders, the
-size and timing of large orders is public too: other traders can act on it, and a large
-redemption can be read as a sign of trouble. The issuer, on the other hand, must know every
-holder, so identities cannot be hidden and should not be. The amount is the one field that can
-be made private without touching that obligation.
+pieces run, and what exists today. It is the summary of the technical design and assumes the
+reader knows what the product is. What Cell Seal is, the problem it solves and who it is for
+are in [`overview.md`](overview.md), read that first. Every term used here is defined in
+[`glossary.md`](glossary.md). The design in detail is the fifteen documents listed in
+section 10, linked at the end of every section. Where this document and a detailed document
+differ, the detailed document is the specification.
 
 Cell Seal is one of the two products of Cell Protocol. The other, Cell Channel, is a private
 payment channel built under SCF Instawards. Cell Seal applies the same zero-knowledge tooling to
-the fund register, which has to stay on-chain.
+the fund register, which has to stay on-chain. The roadmap, budget and team are in the SCF
+application and are not repeated here.
 
-### 1.3 What Cell Seal does
+Two conventions. "The platform" means the party that keeps the fund's register and integrates
+Cell Seal: a tokenization platform or a transfer agent. "Case 1" is a fund that starts sealed
+with a new token, "Case 2" a fund whose existing token keeps its public holders and gets the
+wrapper on top ([`onboarding.md`](onboarding.md)).
 
-The fund's existing SEP-41 token is wrapped 1:1 into sealed balances. From then on,
-subscriptions, redemptions and transfers between holders run inside the wrapper as
-zero-knowledge transfers. The investor's browser builds the proof for each transfer and a
-Soroban contract checks it. Holder addresses, timestamps and order references stay public.
-
-Only one amount ever becomes public: the net of each settlement window, which the settlement
-contract wraps or unwraps when the window closes.
-
-Each transfer also carries a copy encrypted to a viewing key. That key is split 2-of-3 between
-the issuer, the transfer agent and the regulator. Cell holds no share of it, so Cell cannot read
-any amount.
-
-Cell Seal is sold to the party that keeps the fund's register: a tokenization platform or a
-transfer agent. That party keeps its fund token, its mint and burn rights, its KYC process and
-its order lifecycle. In this document "the platform" means that party.
-
-A fund joins in one of two cases. Case 1: a new fund with no token yet starts sealed from its
-first transaction. Case 2: a fund that already has a token with public holders keeps that
-token; the wrapper sits on top of it and each holder moves in by self-wrapping their balance.
-Both cases use the same contracts.
-
-### 1.4 Design rules
+### 1.2 Design rules
 
 1. **Cell Seal cannot read any amount.** Encryption, decryption and proof generation happen only
    in the browser of someone authorised to see the number. Every backend the SDK talks to is
@@ -77,25 +43,6 @@ Both cases use the same contracts.
    NAV, cut-off or dealing day. Those stay with the platform.
 4. **Compose, do not rewrite.** OpenZeppelin's Confidential Token is pinned as a dependency and
    used unmodified. Cell Seal builds only what it does not provide.
-
-### 1.5 Terms
-
-- **Wrapper**: a `seal-token` contract that holds a SEP-41 token 1:1 and issues sealed balances
-  against it. A share wrapper holds a fund token; a cash wrapper holds a stablecoin.
-- **Sealed**: recorded on the ledger as a Pedersen commitment with an encrypted copy for the
-  recipient and for the viewing key, never as a readable number.
-- **Order**: a subscription, redemption or transfer between holders. Every order has a share leg
-  and a cash leg, linked by an `order_id`. The `order_id` is the only part of an order that
-  appears on-chain.
-- **Strike**: the moment the NAV for a dealing day is published and pending orders are priced.
-- **Settlement window**: a fixed period, weekly for example, at whose end the net of all orders
-  moves between the public token and the wrapper. The window's net is the only public amount.
-- **Settlement account**: the fund's own account inside the wrapper. It delivers and receives
-  shares and is the counterparty of every order.
-- **DoP, DvP**: delivery or payment, the two legs settle separately; delivery versus payment,
-  both legs settle in one transaction.
-
-Every term is defined in [`glossary.md`](glossary.md).
 
 ## 2. System overview
 
