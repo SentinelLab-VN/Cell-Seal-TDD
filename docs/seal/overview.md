@@ -207,8 +207,12 @@ The cryptographic base already exists on Stellar. Cell Seal does not rewrite it.
 | Register reconstruction in the SDK | What a platform actually runs |
 | Sandbox: backend, fund console, investor app | A reference platform, so a platform can try the rail before integrating and read a worked integration. Its indexer is the reference event archive. Not sold |
 
-Mainnet go-live depends on the Confidential Token reaching mainnet. Everything Cell Seal builds
-itself can be done before that, on testnet.
+Mainnet go-live runs under a per-fund supply cap until the primitive's verifier is audited
+([`security.md`](security.md) section 7). Everything Cell Seal builds itself is finished on testnet
+first.
+
+Why the primitive is reused instead of written, where it stops, and what fills each gap:
+[`primitives.md`](primitives.md) section 9.
 
 ## 7. Not in scope
 

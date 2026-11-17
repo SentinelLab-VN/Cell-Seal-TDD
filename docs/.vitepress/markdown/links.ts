@@ -7,7 +7,7 @@ import type MarkdownIt from 'markdown-it'
  *   ../../README.md     the repository README         ->  the product's landing page
  *   <folder>/README.md  a folder index                ->  <folder>/index.md
  *   seal/architecture.md  published under a new name  ->  seal/system-architecture.md
- *   screens/fund/       a folder of PNG exports       ->  the folder on GitHub
+ *   design/...          the sandbox screen designs    ->  the folder on GitHub (not published)
  *
  * VitePress resolves the result against the rewritten page paths, so the
  * replacements are written as source file names, not as URLs.
@@ -16,11 +16,12 @@ const GITHUB_DOCS = 'https://github.com/cellprivacy/cell-seal/tree/main/docs/'
 
 function target(href: string, page: string): string {
   if (href === '../../README.md') return './index.md'
+  const design = href.match(/(?:^|\/)design\/(.*)$/)
+  if (design) return GITHUB_DOCS + 'seal/design/' + design[1].replace(/README\.md$/, '')
   if (href.endsWith('README.md')) return href.replace(/README\.md$/, 'index.md')
   if (page.startsWith('seal/') && /(^|\/)architecture\.md(#|$)/.test(href)) {
     return href.replace('architecture.md', 'system-architecture.md')
   }
-  if (/^screens\/(fund|investor)\/$/.test(href)) return GITHUB_DOCS + 'design/' + href
   return href
 }
 
