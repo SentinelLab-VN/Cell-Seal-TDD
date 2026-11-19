@@ -17,12 +17,15 @@ and can be used as they are. What Cell Seal needs on top falls into three groups
 | **Configure and write thin contracts** | Share token contract, policy contract (whitelist + KYC), hook enforcing `auditor_id`, settlement account and settlement window |
 | **Build** | DvP, k-of-n for the auditor key, position limit, sealed forced transfer, client SDK. A reference durable indexer in the sandbox |
 
+Section 9 gives the reasons for building on the primitive instead of writing one, the full list of
+its limits, and what Cell Seal does about each.
+
 Two risks must be faced, both outside Cell Seal's control:
 
 1. **The verifier is unaudited and runs the non-zk flavour.** The proof recipe does not enable
    `--zk`, and the verification key README says the verifier "currently implements only the non-zk
-   `ultra_flavor`". The consequence for confidentiality has not been answered upstream. This blocks
-   mainnet.
+   `ultra_flavor`". The consequence for confidentiality has not been answered upstream. This keeps
+   the per-fund supply cap in place on mainnet ([`security.md`](security.md) section 7).
 2. **The module is not in any stable release**, and three branches expose different surfaces (section 2).
 
 ## 2. Where the code is
@@ -204,3 +207,57 @@ on 2026-10-09 with real proofs. The design above rests on these figures.
 | Tool versions | nargo `1.0.0-beta.11`, bb `0.87.0`, upstream commit `5ffda91`. The six verification keys rebuild byte-identical |
 | Auditor key generator | `H`, the same generator as `PVK` |
 | First `close_window` | 0.40 XLM, mostly rent for new entries |
+
+## 9. Why the primitive, and where it stops
+
+### 9.1 Why reuse instead of build
+
+| Reason | What it buys |
+|---|---|
+| The cryptography exists and has been reviewed | Commitments, amount encryption, six circuits, the auditor channel in every transfer, the two-compartment balance, delegation with escrow, freeze and the policy hook are written and have been through one audit round (section 2). Writing them again is months of circuit work plus a second audit, with a higher chance of a soundness defect than circuits a larger team maintains |
+| It is the primitive Stellar is standardising on | SDF's blog post and demo pin this module. It is built for the BN254 and Poseidon host functions of Protocols 25 and 26 and for the Nethermind UltraHonk verifier. Cell Seal becomes the fund layer on the common primitive, not a second primitive |
+| Interoperability | Any wallet or indexer that follows the upstream SDK and indexer specs reads a Cell Seal account. The `core` and `token` layers of the SDK pass the upstream conformance vectors ([`sdk.md`](sdk.md) section 1). Key derivation follows the upstream SEP-53 recipe |
+| The audit scope stays small | Cell Seal audits what it adds: `settlement`, `fund-policy`, `fund-registry`, `SealHooks`, plus the review of its own constructions R1-R6. The circuit and verifier audits are upstream work that the whole ecosystem shares |
+| Upstream fixes flow in | The commit is pinned and bumped. A fork would cut Cell Seal off from fixes, protocol upgrades and compatibility |
+| Time | The prototype ran a full cycle on testnet on 2026-10-09 with real proofs (section 8). No team writes and proves six circuits in that time |
+| The confidentiality model matches a fund | The primitive hides amounts and leaves addresses visible. A fund must know its holders and check KYC on both sides of every transfer, so this is the model a regulated register needs |
+
+Alternatives considered:
+
+| Alternative | Why not |
+|---|---|
+| Own circuits and own token contract | Months of circuit work, an audit of circuits and verifier at Cell Seal's expense, no interoperability, and a second primitive competing with the one Stellar promotes. Everything a fund needs beyond the primitive is contract and client logic, not new cryptography (section 5) |
+| Fork the module | Fixes and protocol upgrades stop flowing, and compatibility breaks at the first divergence. Cell Seal uses the `Hooks` extension point instead and changes no circuit, domain tag or key derivation ([`cryptography.md`](cryptography.md) section 1) |
+| A shielded pool | Shielded pools hide who pays whom. A fund register must keep holder identities visible and the issuer must check KYC on both parties. The wrong confidentiality model for this product |
+| Keep the single auditor key as it is | One party would read every amount of the fund forever. Issuer, transfer agent and regulator are separate legal entities, and no compliance team accepts one of them holding the whole key. Hence the threshold scheme ([`cryptography.md`](cryptography.md) section 6) |
+
+### 9.2 Where the primitive stops
+
+| # | Limit of the primitive | Consequence for a fund | Cell Seal | Where |
+|---|---|---|---|---|
+| 1 | One-way, single-token transfer. No swap, no escrow across tokens, no DvP | Stablecoin subscriptions and redemptions, and transfers between holders, need two legs that settle together | `settle_dvp` and `settle_pair`: two transfers in one invocation, atomic. The recipient decrypts the leg it receives before signing | [`cryptography.md`](cryptography.md) section 5, [`contracts.md`](contracts.md) section 6 |
+| 2 | `deposit` and `withdraw` have public amounts | A redemption done by unwrapping publishes the order | Investors never `withdraw`. A redemption is a sealed transfer to the settlement account. Only the window net is wrapped or unwrapped, on schedule | [`flows.md`](flows.md) section 6, [`contracts.md`](contracts.md) section 6.2 |
+| 3 | One auditor key per `auditor_id`, a single scalar | One party reads every amount of the fund forever | DKG, threshold ECDH per event, DLEQ proofs, unlock log. `k` never exists in one place | [`cryptography.md`](cryptography.md) section 6 |
+| 4 | Policy is an interface only. Policy and hooks never see an amount | No whitelist or KYC out of the box. No amount-aware rule can live on chain | `fund-policy` with status and `kyc_expiry`, checked for `from` and `to`. Amount-aware rules run on the client with the fund's own keys | [`contracts.md`](contracts.md) section 5, [`cryptography.md`](cryptography.md) section 8 |
+| 5 | The holder picks `auditor_id` at `register`. Core only checks that it exists | An investor can pick an auditor the fund cannot read | `on_register` enforces the fund's `auditor_id`. `on_deposit` enforces `from == to` | [`contracts.md`](contracts.md) section 3.3 |
+| 6 | No concept of an order | A transfer cannot be tied to a business order or guarded against double settlement | `settlement` binds every transfer to `(order_id, role)`, keeps a `Settled` replay guard and emits events without amounts | [`contracts.md`](contracts.md) section 6 |
+| 7 | No schedule | Nothing stops an unwrap right after a large order | `WindowState`, `next_close`, `WindowNotDue` | [`contracts.md`](contracts.md) section 6.2 |
+| 8 | Clawback has a public amount, needs a frozen account and the auditor secret as a circuit witness. No sealed forced transfer | A court-ordered recovery reveals the amount and needs the whole key | A controlled key-reconstruction ceremony, then `rotate_key`, logged. A sealed forced transfer is a later circuit | [`cryptography.md`](cryptography.md) section 6.4 |
+| 9 | Position limit: only off-chain `disclose_balance` specs | A limit as a share of supply cannot be enforced on chain | Checked at order intake from the fund's register. A circuit comes later | [`cryptography.md`](cryptography.md) section 8 |
+| 10 | A spec, not an SDK. No durable indexer, RPC keeps about 7 days of events | Wallets cannot recover and platforms have nothing to integrate | `@cell-seal/sdk`. The event archive is a host service, with the sandbox `indexer` as reference | [`sdk.md`](sdk.md), [`backend.md`](backend.md) section 6 |
+| 11 | `sk` cannot be rotated and derives from one wallet signature. MPC wallets are incompatible | A lost wallet is lost access. An account with several operators has no single signer | Determinism check at enrolment, raw root with a mandatory backup, `ops_root` for the settlement account, freeze and clawback for a lost wallet | [`keys.md`](keys.md) sections 2, 3, 7 |
+| 12 | A spender must be a keyed account, never a contract | Escrow cannot be held by a contract | The spender is the settlement account. The hook forces every pull through `settlement`, which demands the other leg | [`contracts.md`](contracts.md) section 3.3, [`cryptography.md`](cryptography.md) section 5.2 |
+| 13 | A proof is bound to the current `C_spend`. One delegation per `(account, spender)` | An order that waits days for NAV breaks its proof. One pending DvP order per wrapper | `set_spender` escrow for DvP orders. Wallet lock while a proof is pending. Sequential proofs with precomputed `C_spend'`. A new order queues behind the pending one | [`sdk.md`](sdk.md) sections 4.4 and 6 |
+| 14 | `CircuitType` is fixed, and the chain sees no amount, so no price relation across legs | A wrong NAV or payout cannot be blocked on chain | The investor checks the received leg against the NAV in `fund-registry`, with the opening as evidence. A price-linking circuit with its own verifier comes later | [`cryptography.md`](cryptography.md) sections 5.2 and 5.3 |
+| 15 | Off-chain data is out of scope | Fiat amounts and bank details must reach fund ops and not the backend | Sealed box with libsodium, padded numbers, `order_id` inside the plaintext | [`cryptography.md`](cryptography.md) section 4 |
+| 16 | Developer preview, unaudited verifier, non-zk flavour, no stable release | Mainnet exposure | Pinned commit, per-fund supply cap, two audit gates | [`security.md`](security.md) sections 6 and 7 |
+
+### 9.3 What the choice costs
+
+Three risks are accepted with the primitive. The module is a developer preview on three branches with
+different surfaces, so rebasing on upstream is a recurring work item and every bump reruns the
+compatibility tests. The verifier is unaudited and runs the non-zk flavour, so mainnet runs under a
+supply cap until both are resolved. The `CircuitType` enum is fixed, so every circuit Cell Seal adds
+later (price linking, position limit, sealed forced transfer) needs its own verifier contract. None
+of these costs would disappear with an own primitive. They would be replaced by the cost of auditing
+and maintaining that primitive alone.

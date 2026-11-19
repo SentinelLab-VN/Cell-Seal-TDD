@@ -8,61 +8,30 @@
 | Design | https://docs.cellprivate.com/seal, fifteen documents, listed in section 10 |
 | Contact | https://cellprivate.com |
 
-## 1. Introduction
+## 1. Scope
 
 ### 1.1 Purpose
 
 This document explains how Cell Seal is built: the components, the Soroban contracts and how
 they call each other, how an order moves through the system, the security model, where the
-pieces run, and what exists today. It is the first document of the technical design. The other
-fourteen go deeper on each part and are linked at the end of every section.
+pieces run, and what exists today. It is the summary of the technical design and assumes the
+reader knows what the product is. What Cell Seal is, the problem it solves and who it is for
+are in [`overview.md`](overview.md), read that first. Every term used here is defined in
+[`glossary.md`](glossary.md). The design in detail is the fifteen documents listed in
+section 10, linked at the end of every section. Where this document and a detailed document
+differ, the detailed document is the specification.
 
-The roadmap, budget and team are in the SCF application and are not repeated here.
+Cell Seal is one of the two products of Cell Protocol. The other, Cell Channel, is a private
+payment channel built under SCF Instawards. Cell Seal applies the same zero-knowledge tooling to
+the fund register, which has to stay on-chain. The roadmap, budget and team are in the SCF
+application and are not repeated here.
 
-### 1.2 The problem
+Two conventions. "The platform" means the party that keeps the fund's register and integrates
+Cell Seal: a tokenization platform or a transfer agent. "Case 1" is a fund that starts sealed
+with a new token, "Case 2" a fund whose existing token keeps its public holders and gets the
+wrapper on top ([`onboarding.md`](onboarding.md)).
 
-A unit holder in a traditional fund has a private position. Only the fund and its transfer
-agent know how many units they hold and how much they put in or take out.
-
-Tokenization removes that privacy. On Stellar today anyone can look up the address of every
-holder, the balance at that address, and the size of every subscription and redemption. Token
-holders have the same legal rights as traditional unit holders but not the same
-confidentiality. We call this the privacy parity gap.
-
-For retail holders, every balance is public with its history. For institutional holders, the
-size and timing of large orders is public too: other traders can act on it, and a large
-redemption can be read as a sign of trouble. The issuer, on the other hand, must know every
-holder, so identities cannot be hidden and should not be. The amount is the one field that can
-be made private without touching that obligation.
-
-Cell Seal is the second product of the Cell privacy stack. The first, Cell Protocol, is a
-private payment channel built under three SCF Instawards. Cell Seal applies the same
-zero-knowledge tooling to the fund register, which has to stay on-chain.
-
-### 1.3 What Cell Seal does
-
-The fund's existing SEP-41 token is wrapped 1:1 into sealed balances. From then on,
-subscriptions, redemptions and transfers between holders run inside the wrapper as
-zero-knowledge transfers. The investor's browser builds the proof for each transfer and a
-Soroban contract checks it. Holder addresses, timestamps and order references stay public.
-
-Only one amount ever becomes public: the net of each settlement window, which the settlement
-contract wraps or unwraps when the window closes.
-
-Each transfer also carries a copy encrypted to a viewing key. That key is split 2-of-3 between
-the issuer, the transfer agent and the regulator. Cell holds no share of it, so Cell cannot read
-any amount.
-
-Cell Seal is sold to the party that keeps the fund's register: a tokenization platform or a
-transfer agent. That party keeps its fund token, its mint and burn rights, its KYC process and
-its order lifecycle. In this document "the platform" means that party.
-
-A fund joins in one of two cases. Case 1: a new fund with no token yet starts sealed from its
-first transaction. Case 2: a fund that already has a token with public holders keeps that
-token; the wrapper sits on top of it and each holder moves in by self-wrapping their balance.
-Both cases use the same contracts.
-
-### 1.4 Design rules
+### 1.2 Design rules
 
 1. **Cell Seal cannot read any amount.** Encryption, decryption and proof generation happen only
    in the browser of someone authorised to see the number. Every backend the SDK talks to is
@@ -74,25 +43,6 @@ Both cases use the same contracts.
    NAV, cut-off or dealing day. Those stay with the platform.
 4. **Compose, do not rewrite.** OpenZeppelin's Confidential Token is pinned as a dependency and
    used unmodified. Cell Seal builds only what it does not provide.
-
-### 1.5 Terms
-
-- **Wrapper**: a `seal-token` contract that holds a SEP-41 token 1:1 and issues sealed balances
-  against it. A share wrapper holds a fund token; a cash wrapper holds a stablecoin.
-- **Sealed**: recorded on the ledger as a Pedersen commitment with an encrypted copy for the
-  recipient and for the viewing key, never as a readable number.
-- **Order**: a subscription, redemption or transfer between holders. Every order has a share leg
-  and a cash leg, linked by an `order_id`. The `order_id` is the only part of an order that
-  appears on-chain.
-- **Strike**: the moment the NAV for a dealing day is published and pending orders are priced.
-- **Settlement window**: a fixed period, weekly for example, at whose end the net of all orders
-  moves between the public token and the wrapper. The window's net is the only public amount.
-- **Settlement account**: the fund's own account inside the wrapper. It delivers and receives
-  shares and is the counterparty of every order.
-- **DoP, DvP**: delivery or payment, the two legs settle separately; delivery versus payment,
-  both legs settle in one transaction.
-
-Every term is defined in [`glossary.md`](glossary.md).
 
 ## 2. System overview
 
@@ -391,8 +341,55 @@ lost. Verification keys are instance storage and are bumped with the contract.
 timelock. A fund's wrapper is upgraded by that fund's issuer admin. The wrapper address is an
 input to every holder's key derivation, so a wrapper is upgraded in place and never redeployed.
 
-Primitive survey and measurements: [`primitives.md`](primitives.md). Cryptography:
-[`cryptography.md`](cryptography.md).
+### 3.9 Why OpenZeppelin's Confidential Token, and where it stops
+
+Cell Seal builds on the Confidential Token instead of writing its own primitive for five reasons.
+The cryptography a fund needs is already written and has been through one audit round:
+commitments, amount encryption, six circuits, an auditor channel in every transfer, delegation with
+escrow, freeze and a policy hook. It is the primitive Stellar is standardising on, built for the
+Protocol 25 and 26 host functions and the Nethermind verifier, so Cell Seal is the fund layer on
+the common primitive rather than a second primitive. Any wallet or indexer that follows the
+upstream specs reads a Cell Seal account. The audit scope stays small: Cell Seal audits what it
+adds, and the circuit and verifier audits are upstream work the ecosystem shares. And the commit is
+pinned rather than forked, so fixes and protocol upgrades keep flowing.
+
+Three alternatives were set aside. Own circuits would cost months and a second audit for no new
+capability, because everything a fund needs beyond the primitive is contract and client logic. A
+fork would stop upstream fixes and break compatibility at the first divergence, so Cell Seal uses
+the `Hooks` extension point and changes no circuit, domain tag or key derivation. A shielded pool
+hides who pays whom, which a fund register cannot do: the issuer must know every holder and check
+KYC on both sides of every transfer.
+
+The primitive stops where fund settlement begins. Each gap and what fills it:
+
+| Limit of the primitive | Cell Seal |
+|---|---|
+| One-way, single-token transfer. No DvP | `settle_dvp` and `settle_pair`: two transfers in one atomic invocation, the recipient decrypts before signing |
+| `deposit` and `withdraw` have public amounts | Investors never unwrap. A redemption is a sealed transfer to the settlement account. Only the window net moves, on schedule |
+| One auditor key, a single scalar | 2-of-3 distributed key generation, threshold decryption per event with DLEQ proofs, unlock log |
+| Policy is an interface. Policy and hooks never see an amount | `fund-policy` with whitelist and KYC expiry for both parties. Amount-aware rules run in the fund's browser |
+| The holder picks its `auditor_id` | `on_register` enforces the fund's `auditor_id` |
+| No order, no replay guard | `settlement` binds every transfer to `(order_id, role)` and settles each pair once |
+| No schedule | `WindowState` and `WindowNotDue` |
+| Clawback with a public amount and the auditor secret in the circuit | A controlled key-reconstruction ceremony, then `rotate_key`, logged |
+| No on-chain position limit | Checked at order intake from the register. A circuit later |
+| A spec, no SDK, no durable indexer | `@cell-seal/sdk`. The event archive as a host service with a reference indexer |
+| `sk` not rotatable, one wallet signature, MPC wallets incompatible | Determinism check, raw root with mandatory backup, `ops_root` for the settlement account |
+| Proof bound to the current balance, one delegation per spender | `set_spender` escrow for pending DvP orders, wallet lock, sequential proofs |
+| No price relation across legs | The investor checks the received leg against the on-chain NAV, with the opening as evidence. A price-linking circuit later |
+| Off-chain data out of scope | Sealed boxes for fiat amounts and bank details |
+| Developer preview, unaudited verifier, non-zk flavour | Pinned commit, supply cap, the audit gates in section 5.9 |
+
+Other privacy work on Stellar sits on a different layer. Shielded pools such as Stellar Private
+Payments, LumenShade, Moonlight and Hypertron hide counterparties, which a register cannot.
+Fairblock, Arcane and Remi build confidential balances, a general compliant privacy layer and
+confidential remittances. None handles fund settlement: two-leg orders, window netting, KYC expiry,
+a viewing key shared by issuer, transfer agent and regulator, and an SDK a platform runs in its own
+indexer. That is the layer Cell Seal adds.
+
+Reasons, alternatives and the full list of sixteen limits with the document that answers each:
+[`primitives.md`](primitives.md) section 9. Primitive survey and measurements:
+[`primitives.md`](primitives.md). Cryptography: [`cryptography.md`](cryptography.md).
 
 ## 4. How an order flows
 
@@ -698,8 +695,10 @@ the release freeze.
 Cell Seal launches on mainnet only after that audit is finished. If the audit is not finished by
 the milestone date, the frozen, reproducible release is delivered ready to deploy and nothing
 unaudited goes to mainnet. At launch every fund runs under a supply cap enforced by `settlement`.
-The cap stays until OpenZeppelin's verifier has also been audited. The open question of the
-non-zk proof flavour (section 9.3) is tracked with upstream in the same period.
+The cap stays until the UltraHonk verifier that OpenZeppelin's Confidential Token uses
+(Nethermind's `rs-soroban-ultrahonk`) has also been audited, the open question of the non-zk proof
+flavour (section 9.3) has an answer from upstream, and the Confidential Token module has a
+published audit report or a stable release. The capped launch runs on the pinned commit.
 
 Incident runbooks for a suspected soundness defect, an `ops_root` compromise, a backend
 compromise, a tampered web build, lost events and an unplanned key change:
@@ -743,8 +742,8 @@ so apps never depend on RPC retention.
 |---|---|---|---|
 | `local` | Quickstart | Development, CI | Tests pass with the real verifier |
 | `testnet` | Testnet | Integration, hosted sandbox, pilot with a sample or partner fund | A full window with at least three subscriptions and two redemptions in which only `net` is public, and the register rebuilt in the browser equals the wrapper balance ([`onboarding.md`](onboarding.md) section 7) |
-| Mainnet, capped | Mainnet | Pilot under the per-fund supply cap | Contract audit finished; cryptographic review finished |
-| Mainnet | Mainnet | Cap lifted with `set_pilot_cap` | OpenZeppelin's verifier audited |
+| Mainnet, capped | Mainnet | Pilot under the per-fund supply cap | Contract audit finished and findings fixed, cryptographic review finished, release frozen with published hashes |
+| Mainnet | Mainnet | Cap lifted with `set_pilot_cap` | The UltraHonk verifier audited, the non-zk question answered, the Confidential Token module audited or in a stable release |
 
 ### 6.4 Rollback
 
@@ -793,13 +792,12 @@ This design, the fifteen documents in section 10, is published at docs.cellpriva
 
 ### 9.1 What exists today
 
-The team built the Cell Seal prototype with its own funds. On 9 October 2026 it ran a full cycle
-on Stellar testnet with real proofs: the settlement account and an investor registered on the
-wrapper, `close_window` with a net of +1,000 shares, 250 shares delivered sealed to the
-investor, 100 shares redeemed sealed with an `order_id`, and `close_window` with a net of −100
-shares and a withdraw proof. The ledger shows two sealed transfers between known addresses and
-two public numbers, +1,000 and −100. It never shows 250 or 100. Contract IDs and every
-transaction hash are in Appendix A.
+The Cell Seal prototype ran a full cycle on Stellar testnet with real proofs on 9 October 2026:
+the settlement account and an investor registered on the wrapper, `close_window` with a net of
++1,000 shares, 250 shares delivered sealed to the investor, 100 shares redeemed sealed with an
+`order_id`, and `close_window` with a net of −100 shares and a withdraw proof. The ledger shows
+two sealed transfers between known addresses and two public numbers, +1,000 and −100. It never
+shows 250 or 100. Contract IDs and every transaction hash are in Appendix A.
 
 The prototype has five of the six product contracts, with `settlement` in a minimal form. Two
 things differ from the design in sections 3 and 4:
@@ -829,8 +827,8 @@ parts of this document:
 
 | Dependency | State | Effect | Handling |
 |---|---|---|---|
-| Confidential Token on mainnet | Developer preview on testnet. One audit round done, report not published. Not in a stable release | Mainnet launch waits for it. Everything else is finished on testnet first | Commit pinned, `v0.9.0` tracked, compatibility tests rerun on every upgrade |
-| `rs-soroban-ultrahonk` verifier | Not audited | A soundness defect would allow forged proofs | Supply cap until audited |
+| Confidential Token module | Developer preview on testnet. One audit round done, report not published. Not in a stable release | Lifting the supply cap waits for it. The capped launch runs on the pinned commit | Commit pinned, `v0.9.0` tracked, compatibility tests rerun on every upgrade |
+| `rs-soroban-ultrahonk` verifier (Nethermind) | Not audited | A soundness defect would allow forged proofs | Supply cap until audited |
 | Non-zk proof flavour | The upstream recipe does not enable `--zk`; the verifier implements only the non-zk flavour | A proof may leak information about its witness | Raised upstream. Tracked alongside the verifier audit |
 | Wallet message signing | SEP-53 support is uneven; MPC wallets sign non-deterministically | The privacy key cannot be derived from the signature | Determinism check at enrolment; random-root fallback with mandatory backup |
 | RPC event retention | About 7 days | A lagging archive loses events for good | Alert at 25% of the window; backfill path; permanent archive |

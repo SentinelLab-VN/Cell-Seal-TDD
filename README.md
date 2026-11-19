@@ -19,22 +19,22 @@ on a diagram that does not parse.
 
 | # | Document | Scope | For | Answers |
 |---|---|---|---|---|
-| 0 | [`docs/technical-architecture.md`](docs/seal/technical-architecture.md) | Both | Everyone | Start here. Components, Stellar integration, order flow, security and monitoring, infrastructure, stack, licensing, what exists today, testnet addresses |
 | 1 | [`docs/overview.md`](docs/seal/overview.md) | Both | Everyone | What the product does, for whom, what it does not do |
 | 2 | [`docs/glossary.md`](docs/seal/glossary.md) | Both | Everyone | What each term means, and where it appears in the contracts and the SDK |
-| 3 | [`docs/flows.md`](docs/seal/flows.md) | Product | Everyone | Each business flow: who does what, what goes on chain, what the market sees |
-| 4 | [`docs/integration.md`](docs/seal/integration.md) | Product | Integrators | What the platform owns, what Cell Seal provides. Fund token conditions. Who mints, who burns. Reconciliation |
-| 5 | [`docs/onboarding.md`](docs/seal/onboarding.md) | Product | Integrators | Bringing a fund onto the rail: Case 1 (no token yet) and Case 2 (existing token), step by step |
-| 6 | [`docs/primitives.md`](docs/seal/primitives.md) | Product | Engineering | The OpenZeppelin Confidential Token: what is reused, what is built |
-| 7 | [`docs/architecture.md`](docs/seal/architecture.md) | Both | Engineering | Components, what is product and what is sandbox, trust boundaries, data classification, data flows |
-| 8 | [`docs/contracts.md`](docs/seal/contracts.md) | Product | Soroban | Each contract: functions, events, errors, permissions, invariants |
-| 9 | [`docs/cryptography.md`](docs/seal/cryptography.md) | Product | Cryptography, SDK | Anatomy of a transfer, sealed box, DvP, threshold viewing key, openings |
-| 10 | [`docs/keys.md`](docs/seal/keys.md) | Product | All engineering | Every key: generation, storage, recovery, rotation, loss |
-| 11 | [`docs/sdk.md`](docs/seal/sdk.md) | Product | Integrators, frontend | The `@cell-seal/sdk` API and the host services it needs |
-| 12 | [`docs/security.md`](docs/seal/security.md) | Both | Everyone, auditors | Threat model, leak catalogue, invariants, assurance plan, test strategy |
-| 13 | [`docs/backend.md`](docs/seal/backend.md) | Sandbox | Backend | The sandbox backend: services, API, state machine, reference indexer, data model |
-| 14 | [`docs/frontend.md`](docs/seal/frontend.md) | Sandbox | Frontend | The sandbox apps: routes, data handling, amounts, browser security |
-| 15 | [`docs/design/`](docs/seal/design/README.md) | Sandbox | Product, frontend | The sandbox screens: fund console (11) and investor app (7) |
+| 3 | [`docs/technical-architecture.md`](docs/seal/technical-architecture.md) | Both | Everyone | The summary of the whole design. Components, Stellar integration, order flow, security and monitoring, infrastructure, stack, licensing, what exists today, testnet addresses |
+| 4 | [`docs/flows.md`](docs/seal/flows.md) | Product | Everyone | Each business flow: who does what, what goes on chain, what the market sees |
+| 5 | [`docs/integration.md`](docs/seal/integration.md) | Product | Integrators | What the platform owns, what Cell Seal provides. Fund token conditions. Who mints, who burns. Reconciliation |
+| 6 | [`docs/onboarding.md`](docs/seal/onboarding.md) | Product | Integrators | Bringing a fund onto the rail: Case 1 (no token yet) and Case 2 (existing token), step by step |
+| 7 | [`docs/primitives.md`](docs/seal/primitives.md) | Product | Engineering | The OpenZeppelin Confidential Token: what is reused, what is built, and why. Its limits and what fills each |
+| 8 | [`docs/architecture.md`](docs/seal/architecture.md) | Both | Engineering | Components, what is product and what is sandbox, trust boundaries, data classification, data flows |
+| 9 | [`docs/contracts.md`](docs/seal/contracts.md) | Product | Soroban | Each contract: functions, events, errors, permissions, invariants |
+| 10 | [`docs/cryptography.md`](docs/seal/cryptography.md) | Product | Cryptography, SDK | Anatomy of a transfer, sealed box, DvP, threshold viewing key, openings |
+| 11 | [`docs/keys.md`](docs/seal/keys.md) | Product | All engineering | Every key: generation, storage, recovery, rotation, loss |
+| 12 | [`docs/sdk.md`](docs/seal/sdk.md) | Product | Integrators, frontend | The `@cell-seal/sdk` API and the host services it needs |
+| 13 | [`docs/security.md`](docs/seal/security.md) | Both | Everyone, auditors | Threat model, leak catalogue, invariants, assurance plan, test strategy |
+| 14 | [`docs/backend.md`](docs/seal/backend.md) | Sandbox | Backend | The sandbox backend: services, API, state machine, reference indexer, data model |
+| 15 | [`docs/frontend.md`](docs/seal/frontend.md) | Sandbox | Frontend | The sandbox apps: routes, data handling, amounts, browser security |
+| 16 | [`docs/design/`](docs/seal/design/README.md) | Sandbox | Product, frontend | The sandbox screens: fund console (11) and investor app (7) |
 
 **Scope** says what each document describes. *Product* is what a tokenization platform receives:
 the contracts, the SDK and the onboarding procedure. *Sandbox* is the reference tokenization

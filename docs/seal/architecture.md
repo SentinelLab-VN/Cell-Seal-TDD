@@ -1,8 +1,10 @@
-# Cell Seal: Architecture
+# Cell Seal: System Architecture
 
-> The root document of the technical design. Every contract, service, table and package name in
-> the other documents comes from here. Read [`overview.md`](overview.md), [`glossary.md`](glossary.md)
-> and [`primitives.md`](primitives.md) first.
+> The architecture in detail: components, trust boundaries, data classification, data flows and
+> deployment. Every contract, service, table and package name in the other documents comes from
+> here. The summary of the whole design, for a first read, is
+> [`technical-architecture.md`](technical-architecture.md). Read [`overview.md`](overview.md),
+> [`glossary.md`](glossary.md) and [`primitives.md`](primitives.md) before this document.
 
 ## 1. Four design principles
 

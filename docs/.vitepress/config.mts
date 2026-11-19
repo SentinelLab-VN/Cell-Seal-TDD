@@ -1,6 +1,4 @@
 import { defineConfig } from 'vitepress'
-import { cpSync, existsSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { sidebar } from './sidebar'
 import { mermaid } from './markdown/mermaid'
 import { repositoryLinks } from './markdown/links'
@@ -23,18 +21,16 @@ function rewrite(source: string): string {
   return source.replace(/(^|\/)README\.md$/, '$1index.md')
 }
 
-/** Files a product links to that are not markdown or images: copied as they are. */
-const STATIC = [['seal/design/screens', 'seal/design/screens'], ['seal/design/cell-seal.pen', 'seal/design/cell-seal.pen']]
-
 export default defineConfig({
-  title: 'Cell Private',
-  description: 'Technical documentation for Cell Private products on Stellar',
+  title: 'Cell Protocol',
+  description: 'Technical documentation for Cell Protocol products on Stellar',
   lang: 'en',
   cleanUrls: true,
   rewrites: rewrite,
+  // The sandbox screen designs stay in the repository and are not published on the site.
+  // Links to them are rewritten to GitHub in markdown/links.ts.
+  srcExclude: ['seal/design/**'],
   sitemap: { hostname: 'https://docs.cellprivate.com' },
-  // The Pen source file is copied by `buildEnd`, so links to it are valid.
-  ignoreDeadLinks: [/\.pen$/],
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['meta', { name: 'theme-color', content: '#0a0b0d' }],
@@ -49,21 +45,14 @@ export default defineConfig({
 
   themeConfig: {
     logo: '/logo.svg',
-    // One entry per product. Add { text: 'Channel', link: '/channel/', activeMatch: '^/channel/' } later.
-    nav: [{ text: 'Seal', link: '/seal/', activeMatch: '^/seal/' }],
+    // One entry per product. Add { text: 'Cell Channel', link: '/channel/', activeMatch: '^/channel/' } later.
+    nav: [{ text: 'Cell Seal', link: '/seal/', activeMatch: '^/seal/' }],
     sidebar,
     // Section headings only. Every document numbers its sections, so the
     // outline reads as a table of contents without the subsection noise.
     outline: { level: 2, label: 'Contents' },
     search: { provider: 'local' },
     socialLinks: [{ icon: 'github', link: 'https://github.com/cellprivacy/cell-seal' }],
-    footer: { message: 'Cell Private technical documentation.', copyright: 'Cell Private' },
-  },
-
-  buildEnd({ srcDir, outDir }) {
-    for (const [from, to] of STATIC) {
-      const src = resolve(srcDir, from)
-      if (existsSync(src)) cpSync(src, resolve(outDir, to), { recursive: true })
-    }
+    footer: { message: 'Cell Protocol technical documentation.', copyright: 'Cell Protocol' },
   },
 })

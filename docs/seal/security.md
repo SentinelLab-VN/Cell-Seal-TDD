@@ -92,7 +92,7 @@ invariants:
 |---|---|---|---|
 | Verifier `rs-soroban-ultrahonk` | README states it is not audited | A soundness bug allows forged proofs: A2 is lost | Condition for lifting the pilot cap |
 | Non-zk proof flavour | The recipe does not enable `--zk`. The verifier implements only the non-zk flavour | A proof may leak information about the witness: affects A1 | Raised with upstream. Condition for lifting the pilot cap |
-| Confidential Token module | Developer preview. One audit round done, report not published. Not in any stable release | The surface may change. Unknown bugs | Pin the commit. Track the `v0.9.0` branch. Rerun the compatibility tests on every upgrade |
+| Confidential Token module | Developer preview. One audit round done, report not published. Not in any stable release | The surface may change. Unknown bugs | Pin the commit. Track the `v0.9.0` branch. Rerun the compatibility tests on every upgrade. Condition for lifting the pilot cap: the audit report is published or the module is in a stable release |
 | Freighter and SEP-0053 | Message signing support is uneven across wallets | The signer root cannot be derived | The SDK checks determinism at enrolment and falls back to a raw root ([`keys.md`](keys.md) section 2.2) |
 | Stellar RPC | Limited event retention window | If the indexer falls behind, events are lost for good | Alerting, backfill path |
 | Stablecoin as a SAC | Its issuer can freeze or claw back the cash wrapper address | Affects every holder in the wrapper | State it clearly to the fund. Choose a stablecoin with a clear policy |
@@ -104,7 +104,8 @@ invariants:
 | Foundation | The upstream test vectors pass. Real proofs on the `local` network in CI. Schema and log scanning tests for S1 |
 | Settlement complete | Fuzz `settlement`: leg shapes, repeated `order_id`, call order, early `close_window`. Property tests for T1, T2, C1-C6. End-to-end network scan for L12 |
 | Before mainnet | Independent cryptographic review of R1-R6 ([`cryptography.md`](cryptography.md) section 10). External audit of `settlement`, `fund-policy`, `fund-registry` and `SealHooks`, for example through the Soroban Audit Bank. Rehearsal of the clawback ceremony and of an `ops_root` compromise on testnet |
-| Mainnet pilot | Per-fund supply cap in `settlement`. The cap is lifted when: the verifier is audited, the zk-flavour question has an answer, and the Cell Seal contracts are audited |
+| Mainnet, capped | Launch under a per-fund supply cap in `settlement` when all four hold: the external audit of the Cell Seal contracts is finished and its findings fixed, the cryptographic review of R1-R6 is finished, the release is frozen with reproducible builds and published hashes, and the testnet checks in [`onboarding.md`](onboarding.md) section 7 pass. If any is missing at the milestone date, the frozen release is delivered and nothing is deployed |
+| Mainnet, cap lifted | `set_pilot_cap` by the platform admin when all three hold: the UltraHonk verifier (Nethermind's `rs-soroban-ultrahonk`, used by OpenZeppelin's Confidential Token) is audited, the zk-flavour question has an answer from upstream, and the Confidential Token module has a published audit report or a stable release |
 
 ## 8. Incident response
 
